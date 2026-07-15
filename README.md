@@ -1,14 +1,17 @@
-# ShopEase — MERN E-Commerce Platform
+# ShopSmart — MERN E-Commerce Platform
 
-A full-stack e-commerce web app that lets customers browse products, manage a cart, and place orders, with role-based accounts for customers, sellers, and admins. Built with MongoDB, Express, React, and Node.js.
+A full-stack e-commerce web app that lets customers browse products, manage a cart and wishlist, and place orders, with role-based accounts for customers, sellers, and admins. Built with MongoDB, Express, React, and Node.js.
 
 ## Features
 
-- Product catalog with search, category, and price filtering
+- Product catalog with search, category, and price filtering, plus a dedicated category listing endpoint
 - Cart and checkout flow with shipping address collection
 - JWT authentication with role-based access control (customer / seller / admin)
-- Sellers can create, edit, and delete their own product listings
-- Admins can view all orders and update order status
+- User profile management: update profile details, change password, wishlist
+- Sellers can create, edit, and delete their own product listings, and view only their own catalog
+- Product reviews and ratings, with automatic average-rating recalculation
+- Admins can manage users (list, change role, remove), view all orders, update order status, and see aggregate order/revenue stats
+- Customers can cancel pending orders, which restocks the reserved inventory
 - REST API with input validation, centralized error handling, rate limiting, and security headers
 
 ## Tech stack
@@ -55,21 +58,59 @@ The Vite dev server proxies `/api` requests to `http://localhost:5000`, so no `.
 
 ## API overview
 
-| Method | Route                     | Access          | Description                  |
-| ------ | -------------------------- | --------------- | ----------------------------- |
-| POST   | `/api/auth/register`       | Public          | Create an account             |
-| POST   | `/api/auth/login`          | Public          | Log in and receive a JWT      |
-| GET    | `/api/auth/me`              | Authenticated   | Get current user              |
-| GET    | `/api/products`             | Public          | List/search products          |
-| GET    | `/api/products/:id`         | Public          | Get product details           |
-| POST   | `/api/products`             | Seller/Admin    | Create a product              |
-| PUT    | `/api/products/:id`         | Owning seller/Admin | Update a product          |
-| DELETE | `/api/products/:id`         | Owning seller/Admin | Delete a product          |
-| POST   | `/api/orders`                | Authenticated   | Place an order                |
-| GET    | `/api/orders/mine`           | Authenticated   | List your orders              |
-| GET    | `/api/orders/:id`             | Owner/Admin     | Get order details              |
-| GET    | `/api/orders`                | Admin           | List all orders                |
-| PUT    | `/api/orders/:id/status`     | Admin           | Update order status            |
+25 endpoints across auth, users, products, and orders.
+
+### Auth — `/api/auth`
+
+| Method | Route      | Access        | Description                          |
+| ------ | ---------- | ------------- | ------------------------------------- |
+| POST   | `/register`| Public        | Create an account                     |
+| POST   | `/login`   | Public        | Log in and receive a JWT              |
+| GET    | `/me`      | Authenticated | Get current user                      |
+| PUT    | `/me`      | Authenticated | Update profile (name, address)        |
+| PUT    | `/password`| Authenticated | Change password                       |
+
+### Users — `/api/users`
+
+| Method | Route                  | Access        | Description                    |
+| ------ | ----------------------- | ------------- | -------------------------------- |
+| GET    | `/wishlist`             | Authenticated | List your wishlist                |
+| POST   | `/wishlist/:productId`  | Authenticated | Add a product to your wishlist    |
+| DELETE | `/wishlist/:productId`  | Authenticated | Remove a product from your wishlist |
+| GET    | `/`                     | Admin         | List all users                    |
+| PUT    | `/:id/role`             | Admin         | Change a user's role              |
+| DELETE | `/:id`                  | Admin         | Remove a user                     |
+
+### Products — `/api/products`
+
+| Method | Route             | Access               | Description                       |
+| ------ | ------------------ | --------------------- | ----------------------------------- |
+| GET    | `/`                 | Public                | List/search products with filters   |
+| GET    | `/categories`       | Public                | List distinct product categories    |
+| GET    | `/seller/mine`      | Seller/Admin          | List the current seller's products  |
+| GET    | `/:id`               | Public                | Get product details                  |
+| POST   | `/`                  | Seller/Admin          | Create a product                     |
+| PUT    | `/:id`                | Owning seller/Admin    | Update a product                    |
+| DELETE | `/:id`                | Owning seller/Admin    | Delete a product                    |
+| POST   | `/:id/reviews`        | Authenticated          | Add a product review (one per user) |
+
+### Orders — `/api/orders`
+
+| Method | Route             | Access          | Description                                |
+| ------ | ------------------ | --------------- | -------------------------------------------- |
+| POST   | `/`                 | Authenticated   | Place an order                               |
+| GET    | `/mine`             | Authenticated   | List your orders                             |
+| GET    | `/stats`            | Admin           | Aggregate order counts, revenue, and status breakdown |
+| GET    | `/`                 | Admin           | List all orders                              |
+| GET    | `/:id`               | Owner/Admin     | Get order details                             |
+| PUT    | `/:id/status`        | Admin           | Update order status                           |
+| PUT    | `/:id/cancel`        | Owner/Admin     | Cancel a pending/processing order and restock |
+
+### Misc
+
+| Method | Route        | Access | Description        |
+| ------ | ------------- | ------ | -------------------- |
+| GET    | `/api/health` | Public | Service health check |
 
 ## Deployment
 

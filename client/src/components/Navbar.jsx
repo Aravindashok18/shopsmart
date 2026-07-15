@@ -16,7 +16,7 @@ export default function Navbar() {
     <header className="bg-white border-b border-gray-200 sticky top-0 z-10">
       <nav className="max-w-6xl mx-auto flex items-center justify-between px-4 py-3">
         <Link to="/" className="text-xl font-bold text-indigo-600">
-          ShopEase
+          ShopSmart
         </Link>
         <div className="flex items-center gap-5 text-sm font-medium text-gray-700">
           <Link to="/" className="hover:text-indigo-600">

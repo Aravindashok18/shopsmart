@@ -60,4 +60,38 @@ const getMe = async (req, res) => {
   res.json(req.user);
 };
 
-module.exports = { register, login, getMe };
+// @route PUT /api/auth/me
+const updateMe = async (req, res, next) => {
+  try {
+    const { name, address } = req.body;
+    if (name) req.user.name = name;
+    if (address) req.user.address = { ...req.user.address, ...address };
+    await req.user.save();
+    res.json(req.user);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @route PUT /api/auth/password
+const changePassword = async (req, res, next) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    if (!currentPassword || !newPassword) {
+      return res.status(400).json({ message: 'currentPassword and newPassword are required' });
+    }
+
+    const user = await User.findById(req.user._id).select('+password');
+    if (!(await user.matchPassword(currentPassword))) {
+      return res.status(401).json({ message: 'Current password is incorrect' });
+    }
+
+    user.password = newPassword;
+    await user.save();
+    res.json({ message: 'Password updated' });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = { register, login, getMe, updateMe, changePassword };

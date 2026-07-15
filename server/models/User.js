@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema(
       postalCode: String,
       country: String,
     },
+    wishlist: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   },
   { timestamps: true }
 );

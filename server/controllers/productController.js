@@ -100,4 +100,58 @@ const deleteProduct = async (req, res, next) => {
   }
 };
 
-module.exports = { getProducts, getProductById, createProduct, updateProduct, deleteProduct };
+// @route GET /api/products/categories
+const getCategories = async (req, res, next) => {
+  try {
+    const categories = await Product.distinct('category');
+    res.json(categories.sort());
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @route GET /api/products/seller/mine (seller/admin)
+const getMyProducts = async (req, res, next) => {
+  try {
+    const products = await Product.find({ seller: req.user._id }).sort({ createdAt: -1 });
+    res.json(products);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @route POST /api/products/:id/reviews
+const addProductReview = async (req, res, next) => {
+  try {
+    const { rating, comment } = req.body;
+    if (!rating) return res.status(400).json({ message: 'rating is required' });
+
+    const product = await Product.findById(req.params.id);
+    if (!product) return res.status(404).json({ message: 'Product not found' });
+
+    const alreadyReviewed = product.reviews.some((r) => String(r.user) === String(req.user._id));
+    if (alreadyReviewed) {
+      return res.status(409).json({ message: 'You have already reviewed this product' });
+    }
+
+    product.reviews.push({ user: req.user._id, name: req.user.name, rating, comment });
+    product.numReviews = product.reviews.length;
+    product.rating = product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length;
+    await product.save();
+
+    res.status(201).json(product);
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  getProducts,
+  getProductById,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  getCategories,
+  getMyProducts,
+  addProductReview,
+};

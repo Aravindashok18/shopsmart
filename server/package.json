@@ -1,5 +1,5 @@
 {
-  "name": "ecommerce-app-server",
+  "name": "shopsmart-server",
   "version": "1.0.0",
   "description": "REST API for a MERN e-commerce platform",
   "main": "server.js",

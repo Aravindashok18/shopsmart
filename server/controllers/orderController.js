@@ -110,4 +110,63 @@ const updateOrderStatus = async (req, res, next) => {
   }
 };
 
-module.exports = { createOrder, getMyOrders, getOrderById, getAllOrders, updateOrderStatus };
+// @route PUT /api/orders/:id/cancel
+const cancelOrder = async (req, res, next) => {
+  try {
+    const order = await Order.findById(req.params.id);
+    if (!order) return res.status(404).json({ message: 'Order not found' });
+
+    if (req.user.role !== 'admin' && String(order.user) !== String(req.user._id)) {
+      return res.status(403).json({ message: 'Forbidden: not your order' });
+    }
+    if (!['pending', 'processing'].includes(order.status)) {
+      return res.status(400).json({ message: `Cannot cancel an order that is ${order.status}` });
+    }
+
+    order.status = 'cancelled';
+    await order.save();
+
+    await Promise.all(
+      order.items.map((item) => Product.findByIdAndUpdate(item.product, { $inc: { stock: item.quantity } }))
+    );
+
+    res.json(order);
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @route GET /api/orders/stats (admin)
+const getOrderStats = async (req, res, next) => {
+  try {
+    const [totals] = await Order.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalOrders: { $sum: 1 },
+          totalRevenue: { $sum: '$totalPrice' },
+        },
+      },
+    ]);
+
+    const byStatus = await Order.aggregate([{ $group: { _id: '$status', count: { $sum: 1 } } }]);
+
+    res.json({
+      totalOrders: totals?.totalOrders || 0,
+      totalRevenue: totals?.totalRevenue || 0,
+      byStatus: byStatus.reduce((acc, s) => ({ ...acc, [s._id]: s.count }), {}),
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
+module.exports = {
+  createOrder,
+  getMyOrders,
+  getOrderById,
+  getAllOrders,
+  updateOrderStatus,
+  cancelOrder,
+  getOrderStats,
+};
